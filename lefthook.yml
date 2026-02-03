@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    spotless-check:
+      glob: "*.java"
+      run: ./mvnw spotless:check -q
+      fail_text: "Java formatting issues found. Run './mvnw spotless:apply' to fix."
