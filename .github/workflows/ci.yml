@@ -1,0 +1,58 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [develop-nick, main]
+  push:
+    branches: [develop-nick, main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build and run unit tests
+        run: |
+          chmod +x mvnw
+          ./mvnw -B test
+
+      - name: Build application
+        run: ./mvnw -B package -DskipTests
+
+      - name: Start application
+        run: |
+          nohup java -jar target/*.jar > app.log 2>&1 &
+          echo $! > app.pid
+
+      - name: Wait for application
+        run: |
+          npx --yes wait-on@7 http://localhost:8080/actuator/health --timeout 60000
+
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
+
+      - name: Run Bruno API tests
+        working-directory: bruno
+        run: bru run --env ci
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f app.pid ]; then kill $(cat app.pid) || true; fi
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-logs
+          path: app.log
