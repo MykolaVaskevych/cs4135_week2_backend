@@ -26,15 +26,15 @@ jobs:
           chmod +x mvnw
           ./mvnw -B test
 
-      - name: Build application
+      - name: Build all services
         run: ./mvnw -B package -DskipTests
 
-      - name: Start application
+      - name: Start API Gateway
         run: |
-          nohup java -jar target/*.jar > app.log 2>&1 &
+          nohup java -jar api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
           echo $! > app.pid
 
-      - name: Wait for application
+      - name: Wait for API Gateway
         run: |
           npx --yes wait-on@7 http://localhost:8080/actuator/health --timeout 60000
 
